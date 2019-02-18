@@ -4,15 +4,23 @@
 #include <EMGinterface/vtmsg.h>
 #include "EMGinterface/additional_functions.h"
 
-#include <Eigen/Eigen>
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
+// #include <Eigen/Eigen>
+// #include <Eigen/Geometry>
+// #include <Eigen/Dense>
 #include <math.h> 
 
 #include <vector>
 #include <string>
 #include <stdio.h>
 #include <iostream>
+
+#include <algorithm>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <unistd.h>
+#include <termios.h>
 
 
 
@@ -43,7 +51,7 @@ std::vector<double> checkVelocityHistory; // history of the velocity checking
 
 int daqCounter=0;                                                // counter for messages from the windows machine
 
-int nbClasses=5;                                                 // number of different classes
+int nbClasses=3;                                                 // number of different classes
 
 int grasp_type=0;                                                // the outecome of the majority vote
 
@@ -55,10 +63,13 @@ std::vector<int> graspTypeHistory;                               // a vector wit
 
 std::vector<double> graspTime;                                   // the time stamp of the listener of the windows machine
 
+void saveRecordings();                                           // a function to save the data after each trial
+int getch_();                                                    // a function to catch a key press asynchronously
+
 
 //-- Callback functions --
 
-void daqListener(const decision_maker::vtmsg daqmsg){
+void daqListener(const win_bridge::vtmsg daqmsg){
 
 
 
@@ -74,17 +85,17 @@ void daqListener(const decision_maker::vtmsg daqmsg){
 
 //    mVotes.push_back(1);
 
-    //checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
+    checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
 
-    //if(check_velocity(velocityNormHistory.back(),velThreshold)) {
+    if(check_velocity(velocityNormHistory.back(),velThreshold)) {
 
         grasp_type=majority_vote(mVotes,nbClasses, grasp_threshold,grasp_type);
 
         std::cout<<"grasp type: "<<grasp_type<<"\n";
         graspTypeHistory.push_back(grasp_type);
 
-    //}
     }
+    
 
     daqCounter++;
 
@@ -133,8 +144,6 @@ void mocapListener(const geometry_msgs::PoseStamped& mocapmsg){
     }
 
 
-
-
     mocapCounter++;
     //ROS_INFO("I heard: [%d] messages from mocap\n", mocapCounter);
 }
@@ -143,24 +152,23 @@ int main(int argc, char **argv)
 {
 
     // set the message for publishing the graps type
-    decision_maker::vtmsg graspmsg;
+    EMGinterface::mvOutput graspmsg;
 
+    std_msgs::Int16 msgInt;
 
-    // setting the velocity of the joints to maximum
-    righHand_msg.velocity=joint_velocity;
-    leftHand_msg.velocity=joint_velocity;
 
 
     // initialize the node
-    ros::init(argc, argv, "decisionMaker");
+    ros::init(argc, argv, "emginterface");
 
     ros::NodeHandle n;
 
 
     // set a publisher for publishing the grasp type
 
-    ros::Publisher graspType_pub=n.advertise<win_bridge::vtmsg>("EMGinterface/grasp_type", 100);
+    ros::Publisher graspType_pub=n.advertise<EMGinterface::mvOutput>("EMGinterface/grasp_type", 100);
 
+    ros::Publisher graspType_pub2=n.advertise<std_msgs::Int16>("EMGinterfaceInt/grasp_type", 100);
 
 
     // set the subscribers to listen the classification outcome from the windows machine and the position of the hand
@@ -168,8 +176,6 @@ int main(int argc, char **argv)
     ros::Subscriber daqSub = n.subscribe("win_pub", 2, daqListener);
 
     ros::Subscriber mocapSub=n.subscribe("HAND/pose", 10, mocapListener);
-
-
 
     startTime=ros::Time::now().toSec();
 
@@ -187,9 +193,13 @@ int main(int argc, char **argv)
         graspmsg.vote=grasp_type;
 
 
+        msgInt=grasp_type;
+
         // publish the messages
 
         graspType_pub.publish(graspmsg);
+
+        graspType_pub2.publish(msgInt);
 
         // if the key 't' is pressed, save the data and clear the data for the next trial
 
@@ -208,4 +218,68 @@ int main(int argc, char **argv)
 
 
     return 0;
+}
+
+
+void saveRecordings(){
+
+
+
+
+    std::cout<<"\nTrial " << trialCounter+1 <<" has been saved\n";
+
+    // clear the data for the next trial
+
+    for(int i=0;i<(int)mocapHistoryPosition.size();i++){
+        mocapHistoryPosition[i].clear();
+    }
+
+    for(int i=0;i<(int)mocapHistoryVelocity.size();i++){
+        mocapHistoryVelocity[i].clear();
+    }
+
+    mocapTime.clear();
+    checkVelocityHistory.clear();
+    graspTypeHistory.clear();
+    mVotes.clear();
+    velocityNormHistory.clear();
+
+    if(!rightHandHistory[0].empty()){
+        for(int i=0;i<(int)rightHandHistory.size();i++){
+            rightHandHistory[i].clear();
+        }
+    }
+
+    if(!leftHandHistory[0].empty()){
+        for(int i=0;i<(int)leftHandHistory.size();i++){
+            leftHandHistory[i].clear();
+        }
+    }
+
+    std::cout<<"Data cleared\n";
+    std::cout<<"Ready for the next trial\n";
+    trialCounter++;
+    grasp_type=0;
+    mocapCounter=0;
+    daqCounter=0;
+    allegroCounter=0;
+    startTime=ros::Time::now().toSec();
+
+}
+
+
+
+int getch_(){
+  static struct termios oldt, newt;
+  tcgetattr( STDIN_FILENO, &oldt);                  // save old settings
+
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON);                        // disable buffering
+  newt.c_cc[VMIN] = 0; newt.c_cc[VTIME] = 0;
+  tcsetattr( STDIN_FILENO, TCSANOW, &newt);         // apply new settings
+
+  int c = getchar();                                // read character (non-blocking)
+
+  tcsetattr( STDIN_FILENO, TCSANOW, &oldt);         // restore old settings
+  return c;
 }
