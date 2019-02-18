@@ -69,6 +69,8 @@ void saveRecordings();                                           // a function t
 int getch_();                                                    // a function to catch a key press asynchronously
 
 
+bool _firstHandPoseReceived=false;
+
 //-- Callback functions --
 
 void daqListener(const win_bridge::vtmsg daqmsg){
@@ -84,7 +86,7 @@ void daqListener(const win_bridge::vtmsg daqmsg){
     if(daqCounter>0){
         graspTime.push_back((ros::Time::now().toSec())-startTime);
         mVotes.push_back(daqmsg.vote);
-        std::cout<<daqmsg.vote<<"\n";
+        std::cout<<(int)daqmsg.vote<<"\n";
 
 //    mVotes.push_back(1);
 
@@ -115,6 +117,11 @@ void mocapListener(const geometry_msgs::PoseStamped& mocapmsg){
     mocapPosition[0]=mocapmsg.pose.position.x;
     mocapPosition[1]=mocapmsg.pose.position.y;
     mocapPosition[2]=mocapmsg.pose.position.z;
+
+    if(!_firstHandPoseReceived){
+        _firstHandPoseReceived=true;
+        ROS_INFO("Initial hand pose received\n");
+    }
 
 
     mocapTime.push_back((ros::Time::now().toSec())-startTime);
@@ -179,13 +186,19 @@ int main(int argc, char **argv)
 
     ros::Subscriber daqSub = n.subscribe("win_pub", 2, daqListener);
 
-    ros::Subscriber mocapSub=n.subscribe("HAND/pose", 10, mocapListener);
+    ros::Subscriber mocapSub=n.subscribe("hand/pose", 10, mocapListener);
 
     startTime=ros::Time::now().toSec();
 
     // set the loop rate
     ros::Rate loop_rate(sRate);
 
+    while(!_firstHandPoseReceived){
+    
+        // std::cout<<"okook\n";
+        ros::spinOnce();
+        loop_rate.sleep();  
+    }
 
 
 
