@@ -207,10 +207,23 @@ int main(int argc, char **argv)
     {
         // set the grasp type
 
-        graspmsg.vote=grasp_type;
+        if(count>5){
+            if(check_velocity(velocityNormHistory.back(),velThreshold)){
+                graspmsg.vote=grasp_type;
 
 
-        msgInt.data=grasp_type;
+                msgInt.data=grasp_type;
+             }else{
+                graspmsg.vote=0;
+
+
+                msgInt.data=0;
+            }
+        }
+
+        
+
+        
 
         // publish the messages
 
