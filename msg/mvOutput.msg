@@ -1,2 +1,2 @@
 uint8 vote
-float confidence
+float32 confidence

@@ -1,8 +1,10 @@
 #include "ros/ros.h"
 
 #include <geometry_msgs/PoseStamped.h>
-#include <EMGinterface/vtmsg.h>
+#include "std_msgs/Int16.h"
+#include <EMGinterface/mvOutput.h>
 #include "EMGinterface/additional_functions.h"
+#include "win_bridge/vtmsg.h"
 
 // #include <Eigen/Eigen>
 // #include <Eigen/Geometry>
@@ -34,7 +36,7 @@ double startTime;
 int mocapCounter=0;                                              // counter for messages from the mocap system
 double lookBack=0.1;                                             // the timewindow to look back for the average velocity
 double velThreshold=0.018;                                       // velocity threshold for destinguish the motion or no=motion of the hand
-int mocapRate=250;                                               // the sample rate of the motion capture system
+int mocapRate=200;                                               // the sample rate of the motion capture system
 
 std::vector<double> mocapPosition(3,0);                          // vector for the position of the hand
 std::vector<double> mocapVelocity(3,0);                          // vector for the velocity of the hand
@@ -51,7 +53,7 @@ std::vector<double> checkVelocityHistory; // history of the velocity checking
 
 int daqCounter=0;                                                // counter for messages from the windows machine
 
-int nbClasses=3;                                                 // number of different classes
+int nbClasses=2;                                                 // number of different classes
 
 int grasp_type=0;                                                // the outecome of the majority vote
 
@@ -80,20 +82,22 @@ void daqListener(const win_bridge::vtmsg daqmsg){
 
 
     if(daqCounter>0){
-    graspTime.push_back((ros::Time::now().toSec())-startTime);
-    mVotes.push_back(daqmsg.vote);
+        graspTime.push_back((ros::Time::now().toSec())-startTime);
+        mVotes.push_back(daqmsg.vote);
+        std::cout<<daqmsg.vote<<"\n";
 
 //    mVotes.push_back(1);
 
-    checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
+        checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
 
-    if(check_velocity(velocityNormHistory.back(),velThreshold)) {
+        if(check_velocity(velocityNormHistory.back(),velThreshold)) {
 
-        grasp_type=majority_vote(mVotes,nbClasses, grasp_threshold,grasp_type);
+            grasp_type=majority_vote(mVotes,nbClasses, grasp_threshold,grasp_type);
 
-        std::cout<<"grasp type: "<<grasp_type<<"\n";
-        graspTypeHistory.push_back(grasp_type);
+            std::cout<<"grasp type: "<<grasp_type<<"\n";
+            graspTypeHistory.push_back(grasp_type);
 
+        }
     }
     
 
@@ -193,7 +197,7 @@ int main(int argc, char **argv)
         graspmsg.vote=grasp_type;
 
 
-        msgInt=grasp_type;
+        msgInt.data=grasp_type;
 
         // publish the messages
 
@@ -244,25 +248,12 @@ void saveRecordings(){
     mVotes.clear();
     velocityNormHistory.clear();
 
-    if(!rightHandHistory[0].empty()){
-        for(int i=0;i<(int)rightHandHistory.size();i++){
-            rightHandHistory[i].clear();
-        }
-    }
-
-    if(!leftHandHistory[0].empty()){
-        for(int i=0;i<(int)leftHandHistory.size();i++){
-            leftHandHistory[i].clear();
-        }
-    }
-
     std::cout<<"Data cleared\n";
     std::cout<<"Ready for the next trial\n";
     trialCounter++;
     grasp_type=0;
     mocapCounter=0;
     daqCounter=0;
-    allegroCounter=0;
     startTime=ros::Time::now().toSec();
 
 }
