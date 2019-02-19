@@ -155,6 +155,10 @@ add_executable(emgSimulator src/emgsimulator.cpp)
 add_dependencies(emgSimulator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(emgSimulator ${catkin_LIBRARIES} )
 
+add_executable(velcalculator src/relVelCalculator.cpp)
+add_dependencies(velcalculator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(velcalculator ${catkin_LIBRARIES} )
+
 #############
 ## Install ##
 #############

@@ -22,15 +22,18 @@
 
 int sRate=100;                                                   // set the sample rate (Hz)
 
+int mocapCounter=0; 
+double startTime;                                             // counter for messages from the mocap system
+
 
 // ----------------- variables for the robot base -----------------
 
 bool _firstKukaBasePoseReceived=false;
 double robotBaseStamp=0;
 
-Eigen::VectorXf robot_base_position(3); 	// the position of the robot's base as received from the mocap system
-Eigen::VectorXf robot_base_orienation(4);	// the orienation of the robot's base
-Eigen::Matrix3f robot_base_rotMatrix;		// the rotation matrix of the orientation of the robot's base 
+std::vector<double> robot_base_position(3,0); 	// the position of the robot's base as received from the mocap system
+std::vector<double> robot_base_orienation(4,0);	// the orienation of the robot's base
+//Eigen::Matrix3f robot_base_rotMatrix;		// the rotation matrix of the orientation of the robot's base 
 
 
 
@@ -50,9 +53,14 @@ bool _firstHandPoseReceived=false;
 
 void robotBaseListener(const geometry_msgs::PoseStamped& msg){
 
-	robot_base_position << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
-  	robot_base_orienation << msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z;
-	robot_base_rotMatrix = Utils::quaternionToRotationMatrix(robot_base_orienation);
+	robot_base_position[0] = msg.pose.position.x;
+    robot_base_position[1] = msg.pose.position.y;
+    robot_base_position[2] = msg.pose.position.z;
+  	robot_base_orienation[0]= msg.pose.orientation.w;
+    robot_base_orienation[1] = msg.pose.orientation.x;
+    robot_base_orienation[2] = msg.pose.orientation.y;
+    robot_base_orienation[3] = msg.pose.orientation.z;
+	//robot_base_rotMatrix = Utils::quaternionToRotationMatrix(robot_base_orienation);
 
 
 	if(!_firstKukaBasePoseReceived)
@@ -68,13 +76,13 @@ void robotBaseListener(const geometry_msgs::PoseStamped& msg){
 // ----------------- callback function for hand -----------------
 
 
-void mocapListener(const geometry_msgs::PoseStamped& mocapmsg){
+void handListener(const geometry_msgs::PoseStamped& mocapmsg){
 
     /*-- Callback function for subscriber of the mocap system --*/
 
-    mocapPosition[0]=mocapmsg.pose.position.x;
-    mocapPosition[1]=mocapmsg.pose.position.y;
-    mocapPosition[2]=mocapmsg.pose.position.z;
+    handPosition[0]=mocapmsg.pose.position.x;
+    handPosition[1]=mocapmsg.pose.position.y;
+    handPosition[2]=mocapmsg.pose.position.z;
 
     if(!_firstHandPoseReceived){
         _firstHandPoseReceived=true;
@@ -82,35 +90,35 @@ void mocapListener(const geometry_msgs::PoseStamped& mocapmsg){
     }
 
 
-    mocapTime.push_back((ros::Time::now().toSec())-startTime);
+    //mocapTime.push_back((ros::Time::now().toSec())-startTime);
 
-    for(int i=0;i<3;i++){
+    // for(int i=0;i<3;i++){
 
-        mocapHistoryPosition[i].push_back(mocapPosition[i]);
+    //     mocapHistoryPosition[i].push_back(mocapPosition[i]);
 
-    }
+    // }
 
-    if(mocapCounter>0){
-       std::vector<double> previousSample(3,0);
-       for(int i=0;i<3;i++){
-           previousSample[i]=mocapHistoryPosition[i][mocapCounter-1];
-       }
+    // if(mocapCounter>0){
+    //    std::vector<double> previousSample(3,0);
+    //    for(int i=0;i<3;i++){
+    //        previousSample[i]=mocapHistoryPosition[i][mocapCounter-1];
+    //    }
 
-       //std::cout<<"x: "<<previousSample[0]<<", y: "<<previousSample[1]<<",z: "<<previousSample[2]<<"\n";
-       mocapVelocity=calcDtVelocity(mocapPosition,previousSample,(double)1/std::min((double)sRate,(double)mocapRate));
+    //    //std::cout<<"x: "<<previousSample[0]<<", y: "<<previousSample[1]<<",z: "<<previousSample[2]<<"\n";
+    //    mocapVelocity=calcDtVelocity(mocapPosition,previousSample,(double)1/std::min((double)sRate,(double)mocapRate));
 
-        for(int i=0;i<3;i++){
-            mocapHistoryVelocity[i].push_back(mocapVelocity[i]);
-        }
-        velocityNormHistory.push_back(velocityNorm(mocapHistoryVelocity,(int)(lookBack*sRate)));
-        //std::cout<<"\nvel: "<<velocityNormHistory.back()<<"\n";
-        //checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
-        //checkVelocityHistory.push_back(1);
-       // std::cout<<"velocity: " << check_velocity(velocityNormHistory.back(),velThreshold) << "\n";// << velocityNormHistory.back() << " "
+    //     for(int i=0;i<3;i++){
+    //         mocapHistoryVelocity[i].push_back(mocapVelocity[i]);
+    //     }
+    //     velocityNormHistory.push_back(velocityNorm(mocapHistoryVelocity,(int)(lookBack*sRate)));
+    //     //std::cout<<"\nvel: "<<velocityNormHistory.back()<<"\n";
+    //     //checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
+    //     //checkVelocityHistory.push_back(1);
+    //    // std::cout<<"velocity: " << check_velocity(velocityNormHistory.back(),velThreshold) << "\n";// << velocityNormHistory.back() << " "
 
 
 
-    }
+    // }
 
 
     mocapCounter++;
@@ -126,9 +134,6 @@ void mocapListener(const geometry_msgs::PoseStamped& mocapmsg){
 int main(int argc, char **argv)
 {
 
-    // set the message for publishing the graps type
-    EMGinterface::mvOutput graspmsg;
-
     std_msgs::Int16 msgInt;
 
 
@@ -141,16 +146,14 @@ int main(int argc, char **argv)
 
     // set a publisher for publishing the grasp type
 
-    ros::Publisher graspType_pub=n.advertise<EMGinterface::mvOutput>("EMGinterface/grasp_type", 100);
-
-    ros::Publisher graspType_pub2=n.advertise<std_msgs::Int16>("EMGinterfaceInt/grasp_type", 100);
+    ros::Publisher veldir_pub2=n.advertise<std_msgs::Int16>("EMGinterfaceInt/veldir", 100);
 
 
     // set the subscribers to listen the classification outcome from the windows machine and the position of the hand
 
-    ros::Subscriber daqSub = n.subscribe("win_pub", 2, daqListener);
+    ros::Subscriber robotBaseSub=n.subscribe("Robot_base/pose", 10, robotBaseListener);
 
-    ros::Subscriber mocapSub=n.subscribe("hand/pose", 10, mocapListener);
+    ros::Subscriber mocapSub=n.subscribe("hand/pose", 10, handListener);
 
     startTime=ros::Time::now().toSec();
 
@@ -165,42 +168,56 @@ int main(int argc, char **argv)
     }
 
 
+    std::vector< std::vector<double> > mVel;
+    std::vector<double> dtVel(3,0);
+    std::vector<double> averageVel(3,0);
+
+    double speed=0.0;
+
 
     int count = 0;
     while (ros::ok())
     {
         // set the grasp type
 
-        if(count>5){
-            if(check_velocity(velocityNormHistory.back(),velThreshold)){
-                graspmsg.vote=grasp_type;
+        dtVel[0]=(robot_base_position[0]-handPosition[0])/(1/(double)sRate);
+        dtVel[1]=(robot_base_position[1]-handPosition[1])/(1/(double)sRate);
+        dtVel[2]=(robot_base_position[2]-handPosition[2])/(1/(double)sRate);
 
+        mVel.push_back(dtVel);
 
-                msgInt.data=grasp_type;
+        if(count>10){
+
+            averageVel=calvAverageVelocity(mVel,10);
+
+            speed=std::sqrt(std::pow(averageVel[0],2)+std::pow(averageVel[1],2)+std::pow(averageVel[2],2));
+
+            if(speed>=0.0){
+
+                msgInt.data=1;
+             
              }else{
-                graspmsg.vote=0;
-
 
                 msgInt.data=0;
             }
+
+             // publish the messages
+
+            veldir_pub2.publish(msgInt);
         }
 
         
 
         
 
-        // publish the messages
-
-        graspType_pub.publish(graspmsg);
-
-        graspType_pub2.publish(msgInt);
+       
 
         // if the key 't' is pressed, save the data and clear the data for the next trial
 
-        if(getch_()=='t'){
-            saveRecordings();
+        // if(getch_()=='t'){
+        //     saveRecordings();
 
-        }
+        // }
 
 
 
