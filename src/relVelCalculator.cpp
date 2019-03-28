@@ -170,6 +170,7 @@ int main(int argc, char **argv)
 
     std::vector< std::vector<double> > mVel;
     std::vector<double> dtVel(3,0);
+    std::vector<double> previouPos(3,0);
     std::vector<double> averageVel(3,0);
 
     double speed=0.0;
@@ -180,19 +181,54 @@ int main(int argc, char **argv)
     {
         // set the grasp type
 
-        dtVel[0]=(robot_base_position[0]-handPosition[0])/(1/(double)sRate);
-        dtVel[1]=(robot_base_position[1]-handPosition[1])/(1/(double)sRate);
-        dtVel[2]=(robot_base_position[2]-handPosition[2])/(1/(double)sRate);
+        if(count==0){
+            // previouPos[0]=(robot_base_position[0]-handPosition[0]);
+            // previouPos[1]=(robot_base_position[1]-handPosition[1]);
+            // previouPos[2]=(robot_base_position[2]-handPosition[2]);            
+
+            previouPos[0]=handPosition[0];
+            previouPos[1]=handPosition[1];
+            previouPos[2]=handPosition[2];            
+            
+        }else{
+
+            // dtVel[0]=(robot_base_position[0]-handPosition[0]-previouPos[0])/(1/(double)sRate);
+            // dtVel[1]=(robot_base_position[1]-handPosition[1]-previouPos[1])/(1/(double)sRate);
+            // dtVel[2]=(robot_base_position[2]-handPosition[2]-previouPos[2])/(1/(double)sRate);
+
+            // previouPos[0]=(robot_base_position[0]-handPosition[0]);
+            // previouPos[1]=(robot_base_position[1]-handPosition[1]);
+            // previouPos[2]=(robot_base_position[2]-handPosition[2]);
+
+            dtVel[0]=(handPosition[0]-previouPos[0])/(1/(double)sRate);
+            dtVel[1]=(handPosition[1]-previouPos[1])/(1/(double)sRate);
+            dtVel[2]=(handPosition[2]-previouPos[2])/(1/(double)sRate);
+
+            // std::cout<<dtVel[0]<<", "<<dtVel[1]<<", "<<dtVel[2]<<"\n";
+
+            previouPos[0]=handPosition[0];
+            previouPos[1]=handPosition[1];
+            previouPos[2]=handPosition[2];
+
+        }
+
+        
 
         mVel.push_back(dtVel);
+
+        // std::cout<<dtVel[0]<<", "<<dtVel[1]<<", "<<dtVel[2]<<"\n";
 
         if(count>10){
 
             averageVel=calvAverageVelocity(mVel,10);
 
+            // std::cout<<averageVel[0]<<", "<<averageVel[1]<<", "<<averageVel[2]<<"\n";
+
             speed=std::sqrt(std::pow(averageVel[0],2)+std::pow(averageVel[1],2)+std::pow(averageVel[2],2));
 
-            if(speed>=0.0){
+            std::cout<<"speed: " <<speed<<"\n";
+
+            if(speed>=0.1){
 
                 msgInt.data=1;
              

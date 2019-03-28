@@ -188,26 +188,55 @@ std::vector<double> calvAverageVelocity(std::vector< std::vector<double> > mVel,
      *
      */
 
-    std::vector<double> averVel(mVel.size(),0);
+    std::vector<double> averVel(mVel[0].size(),0);
 
-    if (samplesBack<(int)mVel[0].size()){
+    if (samplesBack<(int)mVel.size()){
+        // std::cout<<"okokokookokokokokokok\n";
+
         for(int i=0;i<samplesBack;i++){
-            for(int j=0;j<(int)mVel.size();j++){
-                averVel[j]+=mVel[j][(int)mVel[j].size()-i];
-            }
+
+            averVel[0]=averVel[0]+mVel[(int)mVel.size()-1-i][0];
+            averVel[1]=averVel[1]+mVel[(int)mVel.size()-1-i][1];
+            averVel[2]=averVel[2]+mVel[(int)mVel.size()-1-i][2];
+
+
+            // for(int j=0;j<(int)mVel.size();j++){
+            //     averVel[j]+=mVel[j][(int)mVel[j].size()-i];
+            // }
         }
-        for(int j=0;j<(int)mVel.size();j++){
-            averVel[j]=averVel[j]/samplesBack;
-        }
+        averVel[0]=averVel[0]/(double)samplesBack;
+        averVel[1]=averVel[1]/(double)samplesBack;
+        averVel[2]=averVel[2]/(double)samplesBack;
+
+        // for(int j=0;j<(int)mVel.size();j++){
+        //     averVel[j]=averVel[j]/samplesBack;
+        // }
     }else{
-        for(int i=0;i<(int)mVel[0].size();i++){
-            for(int j=0;j<(int)mVel.size();j++){
-                averVel[j]+=mVel[j][(int)mVel[j].size()-i];
-            }
+
+        for(int i=0;i<(int)mVel.size();i++){
+
+            averVel[0]=averVel[0]+mVel[i][0];
+            averVel[1]=averVel[1]+mVel[i][1];
+            averVel[2]=averVel[2]+mVel[i][2];
+
+
+            // for(int j=0;j<(int)mVel.size();j++){
+            //     averVel[j]+=mVel[j][(int)mVel[j].size()-i];
+            // }
         }
-        for(int j=0;j<(int)mVel.size();j++){
-            averVel[j]=averVel[j]/((int)mVel[0].size());
-        }
+        averVel[0]=averVel[0]/(double)mVel.size();
+        averVel[1]=averVel[1]/(double)mVel.size();
+        averVel[2]=averVel[2]/(double)mVel.size();
+
+
+        // for(int i=0;i<(int)mVel[0].size();i++){
+        //     for(int j=0;j<(int)mVel.size();j++){
+        //         averVel[j]+=mVel[j][(int)mVel[j].size()-i];
+        //     }
+        // }
+        // for(int j=0;j<(int)mVel.size();j++){
+        //     averVel[j]=averVel[j]/((int)mVel[0].size());
+        // }
     }
     return averVel;
 }
