@@ -2,6 +2,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include "std_msgs/Int16.h"
+#include "geometry_msgs/Twist.h"
 
 
 #include "EMGinterface/additional_functions.h"
@@ -136,6 +137,8 @@ int main(int argc, char **argv)
 
     std_msgs::Int16 msgInt;
 
+    geometry_msgs::Twist avVelocity;
+
 
 
     // initialize the node
@@ -147,6 +150,8 @@ int main(int argc, char **argv)
     // set a publisher for publishing the grasp type
 
     ros::Publisher veldir_pub2=n.advertise<std_msgs::Int16>("EMGinterfaceInt/veldir", 100);
+
+    ros::Publisher velocity_pub=n.advertise<geometry_msgs::Twist>("EMGinterfaceInt/avVel", 100);
 
 
     // set the subscribers to listen the classification outcome from the windows machine and the position of the hand
@@ -223,6 +228,12 @@ int main(int argc, char **argv)
             averageVel=calvAverageVelocity(mVel,10);
 
             // std::cout<<averageVel[0]<<", "<<averageVel[1]<<", "<<averageVel[2]<<"\n";
+
+            avVelocity.linear.x=averageVel[0];
+            avVelocity.linear.y=averageVel[1];
+            avVelocity.linear.z=averageVel[2];
+
+            velocity_pub.publish(avVelocity);
 
             speed=std::sqrt(std::pow(averageVel[0],2)+std::pow(averageVel[1],2)+std::pow(averageVel[2],2));
 
