@@ -80,25 +80,31 @@ void daqListener(const win_bridge::vtmsg daqmsg){
     /*-- Callback function for subscriber of the windows machine --*/
 
     graspTime.push_back((ros::Time::now().toSec())-startTime);
-
+    // std::cout<<"daq vote: "<<daqmsg.vote<<"\n";
 
 
     if(daqCounter>0){
-        graspTime.push_back((ros::Time::now().toSec())-startTime);
-        mVotes.push_back(daqmsg.vote);
-        std::cout<<(int)daqmsg.vote<<"\n";
+        if(_firstHandPoseReceived){
+            graspTime.push_back((ros::Time::now().toSec())-startTime);
+            mVotes.push_back(daqmsg.vote);
+            // std::cout<<(int)daqmsg.vote<<"\n";
 
-//    mVotes.push_back(1);
+    //    mVotes.push_back(1);
+            
+            std::cout<<"velthreshold: " << velThreshold << std::endl;
 
-        checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
+            checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
+            
+        
 
-        if(check_velocity(velocityNormHistory.back(),velThreshold)) {
+            if(check_velocity(velocityNormHistory.back(),velThreshold)) {
 
-            grasp_type=majority_vote(mVotes,nbClasses, grasp_threshold,grasp_type);
+                grasp_type=majority_vote(mVotes,nbClasses, grasp_threshold,grasp_type);
 
-            std::cout<<"grasp type: "<<grasp_type<<"\n";
-            graspTypeHistory.push_back(grasp_type);
+                std::cout<<"grasp type: "<<grasp_type<<"\n";
+                graspTypeHistory.push_back(grasp_type);
 
+            }
         }
     }
     
@@ -208,7 +214,9 @@ int main(int argc, char **argv)
         // set the grasp type
 
         if(count>5){
+            
             if(check_velocity(velocityNormHistory.back(),velThreshold)){
+                
                 graspmsg.vote=grasp_type;
 
 
