@@ -101,7 +101,7 @@ std::vector< std::vector<double> > handConfiguations(int hand, int nb_classes){
 
 
 
-int majority_vote(std::vector<int> Votes, int nb_classes, double threshold, int previous_grasp){
+int majority_vote(std::vector<int> Votes, int nb_classes, double threshold, int previous_grasp, int lookBackSamples){
 /*
  * This function finds which class has the most appearances in the vector 'Votes'
  *
@@ -109,16 +109,28 @@ int majority_vote(std::vector<int> Votes, int nb_classes, double threshold, int 
  */
 
 
-    //std::cout<<"maj vote okokkokoko\n";
+    //std::cout<<"maj vote okokkokok\n";
 
-    int nb_votes=Votes.size();
+    // int nb_votes=Votes.size();
+
+    std::vector<int> lastVotes(Votes.end() - lookBackSamples, Votes.end());
+
+    int nb_votes=lastVotes.size();
 
     std::vector<int> classes(nb_classes,0);
 
     std::vector<int>::iterator result;
+    // for(int j=0;j<nb_votes;j++){
+    //     for(int k=1;k<6;k++){
+    //         if (Votes[j]==k){
+    //             classes[k-1]++;
+    //         }
+    //     }
+    // }
+
     for(int j=0;j<nb_votes;j++){
         for(int k=1;k<6;k++){
-            if (Votes[j]==k){
+            if (lastVotes[j]==k){
                 classes[k-1]++;
             }
         }
@@ -126,11 +138,20 @@ int majority_vote(std::vector<int> Votes, int nb_classes, double threshold, int 
 
 
     result=std::max_element(classes.begin(),classes.end());
-    std::cout<<" majority vote: "<<std::distance(classes.begin(),result)+1<<"\n";
+    // std::cout<<" majority vote: "<<std::distance(classes.begin(),result)+1<<"\n";
 
-    std::cout<<" confidence "<<(double)classes[std::distance(classes.begin(),result)/Votes.size()]<<"\n";
+    // std::cout<<" confidence "<<(double)classes[std::distance(classes.begin(),result)/Votes.size()]<<"\n";
 
-    if((Votes.size()>10)&&(classes[std::distance(classes.begin(),result)]/Votes.size()>threshold)){
+    // if((Votes.size()>10)&&(classes[std::distance(classes.begin(),result)]/Votes.size()>threshold)){
+    //    //std::cout<<" majority vote: "<<std::distance(classes.begin(),result)+1<<"\n";
+
+    //     return std::distance(classes.begin(),result)+1;
+
+    // }else{
+    //    return previous_grasp;
+    // }
+
+    if((Votes.size()>10)&&(classes[std::distance(classes.begin(),result)]/lastVotes.size()>threshold)){
        //std::cout<<" majority vote: "<<std::distance(classes.begin(),result)+1<<"\n";
 
         return std::distance(classes.begin(),result)+1;
@@ -188,16 +209,18 @@ std::vector<double> calvAverageVelocity(std::vector< std::vector<double> > mVel,
      *
      */
 
-    std::vector<double> averVel(mVel[0].size(),0);
+    std::vector<double> averVel(mVel.size(),0);
 
-    if (samplesBack<(int)mVel.size()){
+    // std::cout<<"averVel size: " << averVel.size() <<std::endl;
+
+    if (samplesBack<(int)mVel[0].size()){
         // std::cout<<"okokokookokokokokokok\n";
 
         for(int i=0;i<samplesBack;i++){
 
-            averVel[0]=averVel[0]+mVel[(int)mVel.size()-1-i][0];
-            averVel[1]=averVel[1]+mVel[(int)mVel.size()-1-i][1];
-            averVel[2]=averVel[2]+mVel[(int)mVel.size()-1-i][2];
+            averVel[0]=averVel[0]+mVel[0][(int)mVel.size()-1-i];
+            averVel[1]=averVel[1]+mVel[1][(int)mVel.size()-1-i];
+            averVel[2]=averVel[2]+mVel[2][(int)mVel.size()-1-i];
 
 
             // for(int j=0;j<(int)mVel.size();j++){
@@ -215,9 +238,9 @@ std::vector<double> calvAverageVelocity(std::vector< std::vector<double> > mVel,
 
         for(int i=0;i<(int)mVel.size();i++){
 
-            averVel[0]=averVel[0]+mVel[i][0];
-            averVel[1]=averVel[1]+mVel[i][1];
-            averVel[2]=averVel[2]+mVel[i][2];
+            averVel[0]=averVel[0]+mVel[0][i];
+            averVel[1]=averVel[1]+mVel[1][i];
+            averVel[2]=averVel[2]+mVel[2][i];
 
 
             // for(int j=0;j<(int)mVel.size();j++){
@@ -248,7 +271,17 @@ double velocityNorm(std::vector< std::vector<double> > mVel, int samplesBack){
      *
      */
 
+    // std::cout<<"samples back: " << samplesBack <<std::endl;
+
+    // std::cout<<"size of mVel: " << mVel.size()<<", "<< mVel[0].size()<<std::endl;
+
     std::vector<double> avVel=calvAverageVelocity(mVel, samplesBack);
+
+    // std::cout<<"average velocity: ";
+    // for(int i=0;i<3;i++){
+    //     std::cout<<avVel[i]<<", ";
+    // }
+    // std::cout<<"\n";
 
     double norm=0;
     for(int i=0;i<(int)avVel.size();i++){
@@ -269,9 +302,13 @@ bool check_velocity(double velocity, double threshold){
     //std::cout<<"check vel okokkokoko\n";
 
 
+    // std::cout<<"vel for checking: " << velocity << ", theshold: " << threshold; // << std::endl; 
+
     if(velocity>=threshold){
+        // std::cout<<" yes\n";
         return true;
     }else{
+        // std::cout<<" no\n";
         return false;
     }
 

@@ -80,26 +80,28 @@ void daqListener(const win_bridge::vtmsg daqmsg){
     /*-- Callback function for subscriber of the windows machine --*/
 
     graspTime.push_back((ros::Time::now().toSec())-startTime);
-    // std::cout<<"daq vote: "<<daqmsg.vote<<"\n";
+    // std::cout<<"daq vote: "<<(int)daqmsg.vote<<"\n";
 
 
     if(daqCounter>0){
         if(_firstHandPoseReceived){
             graspTime.push_back((ros::Time::now().toSec())-startTime);
-            mVotes.push_back(daqmsg.vote);
+            mVotes.push_back((int)daqmsg.vote);
             // std::cout<<(int)daqmsg.vote<<"\n";
 
     //    mVotes.push_back(1);
             
-            std::cout<<"velthreshold: " << velThreshold << std::endl;
+            // std::cout<<"velthreshold: " << velThreshold << std::endl;
 
             checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
             
-        
+            // std::cout<<"hand velocity: "<<velocityNormHistory.back()<<"\n";
 
             if(check_velocity(velocityNormHistory.back(),velThreshold)) {
 
-                grasp_type=majority_vote(mVotes,nbClasses, grasp_threshold,grasp_type);
+                // std::cout<<"okkkkkkkkkkkkkkkkkkkkkkkkk\n";
+
+                grasp_type=majority_vote(mVotes,nbClasses, grasp_threshold,grasp_type,15);
 
                 std::cout<<"grasp type: "<<grasp_type<<"\n";
                 graspTypeHistory.push_back(grasp_type);
@@ -146,14 +148,20 @@ void mocapListener(const geometry_msgs::PoseStamped& mocapmsg){
 
        //std::cout<<"x: "<<previousSample[0]<<", y: "<<previousSample[1]<<",z: "<<previousSample[2]<<"\n";
        mocapVelocity=calcDtVelocity(mocapPosition,previousSample,(double)1/std::min((double)sRate,(double)mocapRate));
+       // std::cout<<"mocap velocity: ";
+       // for(int i=0;i<3;i++){
+       //  std::cout<<mocapVelocity[i]<<", ";
+       // }
+       // std::cout<<"\n";
 
-        for(int i=0;i<3;i++){
+       for(int i=0;i<3;i++){
             mocapHistoryVelocity[i].push_back(mocapVelocity[i]);
-        }
-        velocityNormHistory.push_back(velocityNorm(mocapHistoryVelocity,(int)(lookBack*sRate)));
-        //std::cout<<"\nvel: "<<velocityNormHistory.back()<<"\n";
-        //checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
-        //checkVelocityHistory.push_back(1);
+       }
+       // std::cout<<"hand average vel: " <<velocityNorm(mocapHistoryVelocity,(int)(lookBack*sRate))<<std::endl;
+       velocityNormHistory.push_back(velocityNorm(mocapHistoryVelocity,(int)(lookBack*sRate)));
+       // std::cout<<"\nvel: "<<velocityNormHistory.back()<<"\n";
+       //checkVelocityHistory.push_back(check_velocity(velocityNormHistory.back(),velThreshold));
+       //checkVelocityHistory.push_back(1);
        // std::cout<<"velocity: " << check_velocity(velocityNormHistory.back(),velThreshold) << "\n";// << velocityNormHistory.back() << " "
 
 
@@ -212,11 +220,16 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         // set the grasp type
+        // std::cout<<"okkkkkkkkkkkkkkkkkkkk\n";
 
         if(count>5){
+
+            // std::cout<<"grasp type: " << grasp_type << std::endl; 
             
             if(check_velocity(velocityNormHistory.back(),velThreshold)){
                 
+                // std::cout<<"okkkkkkkkkkkkkkkkkkkk\n";
+
                 graspmsg.vote=grasp_type;
 
 
