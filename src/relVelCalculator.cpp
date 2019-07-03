@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 
 
     // initialize the node
-    ros::init(argc, argv, "emginterface");
+    ros::init(argc, argv, "velcalculator");
 
     ros::NodeHandle n;
 
