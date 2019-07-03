@@ -217,10 +217,12 @@ std::vector<double> calvAverageVelocity(std::vector< std::vector<double> > mVel,
         // std::cout<<"okokokookokokokokokok\n";
 
         for(int i=0;i<samplesBack;i++){
+            // std::cout<<(int)mVel[0].size()-1-i<<"\n";
+            // std::cout<<(int)mVel[0].size()<<"\n";
 
-            averVel[0]=averVel[0]+mVel[0][(int)mVel.size()-1-i];
-            averVel[1]=averVel[1]+mVel[1][(int)mVel.size()-1-i];
-            averVel[2]=averVel[2]+mVel[2][(int)mVel.size()-1-i];
+            averVel[0]=averVel[0]+mVel[0][(int)mVel[0].size()-1-i];
+            averVel[1]=averVel[1]+mVel[1][(int)mVel[0].size()-1-i];
+            averVel[2]=averVel[2]+mVel[2][(int)mVel[0].size()-1-i];
 
 
             // for(int j=0;j<(int)mVel.size();j++){

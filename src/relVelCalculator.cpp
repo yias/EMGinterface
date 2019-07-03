@@ -173,7 +173,7 @@ int main(int argc, char **argv)
     }
 
 
-    std::vector< std::vector<double> > mVel;
+    std::vector< std::vector<double> > mVel(3);
     std::vector<double> dtVel(3,0);
     std::vector<double> previouPos(3,0);
     std::vector<double> averageVel(3,0);
@@ -219,11 +219,15 @@ int main(int argc, char **argv)
 
         
 
-        mVel.push_back(dtVel);
+        mVel[0].push_back(dtVel[0]);
+        mVel[1].push_back(dtVel[1]);
+        mVel[2].push_back(dtVel[2]);
 
         // std::cout<<dtVel[0]<<", "<<dtVel[1]<<", "<<dtVel[2]<<"\n";
 
         if(count>10){
+
+            // std::cout<<"mVel: "  << mVel.size() << ", " << mVel[0].size() <<"\n";
 
             averageVel=calvAverageVelocity(mVel,10);
 
